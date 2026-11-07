@@ -1,6 +1,6 @@
 # 年間カレンダージェネレーター
 
-GitHub Pages 用の静的サイトです。ビルド不要です。
+https://urojitsu-void.github.io/calendar-maker/
 
 ## 機能
 
