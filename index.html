@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>返礼品・年間カレンダージェネレーター</title>
+<style>
+:root{color-scheme:dark;--bg:#121821;--panel:#202a36;--line:#394657;--text:#f2f4f8;--muted:#acb8c6;--accent:#83d3c3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}header{padding:24px max(20px,calc((100vw - 1450px)/2));border-bottom:1px solid var(--line)}h1{font-size:22px;margin:0 0 6px}p{margin:5px 0;color:var(--muted);font-size:13px}.controls{padding:18px 20px;max-width:1450px;margin:auto;display:flex;gap:13px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:6px;font-size:13px}.field input,.field select{background:#17212c;border:1px solid #556577;color:white;border-radius:6px;padding:9px 10px;font:inherit}.field input[type=color]{padding:2px;height:39px;width:62px}.field input[type=number]{width:95px}button{background:var(--accent);color:#102024;border:0;padding:11px 16px;border-radius:7px;font-weight:700;cursor:pointer}button.secondary{background:#394657;color:#fff}button:disabled{opacity:.5;cursor:wait}.tip{padding:0 20px 14px;max-width:1450px;margin:auto}.workspace{max-width:1540px;margin:auto;padding:12px 20px 32px;display:grid;grid-template-columns:285px minmax(0,1fr);gap:18px;align-items:start}.sidebar{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}.side-title{font-weight:700;margin-bottom:10px}.month-upload{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}.month-upload .m-label{width:38px;font-weight:700}.month-upload label{display:block;flex:1;padding:8px;border:1px solid #647588;border-radius:6px;cursor:pointer;text-align:center;font-size:12px}.month-upload label:hover{background:#334354}.month-upload input[type="file"]{display:none}.month-upload button{font-size:11px;padding:7px 8px}.month-upload .picked{font-size:11px;color:var(--accent);margin-left:4px}.year{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-width:0}.month{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}.month-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;font-size:15px;font-weight:700}.mini{width:100%;aspect-ratio:8/5;background:#fff;border-radius:5px;display:block;object-fit:contain}.month-foot{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--muted)}.month-foot button{font-size:11px;padding:3px 8px}.notice{max-width:1450px;margin:auto;padding:0 20px 24px;font-size:12px;color:var(--muted)}@media(max-width:1100px){.year{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:730px){.workspace{grid-template-columns:1fr}.sidebar{position:static;max-height:none}.year{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:500px){.year{grid-template-columns:1fr}}.image-editor{width:100%;padding:8px 0 5px 0;display:grid;gap:8px}.month-upload{flex-wrap:wrap}.month-upload .image-editor{flex-basis:100%}.image-editor .edit-row{display:grid;grid-template-columns:48px minmax(0,1fr) 45px;gap:7px;align-items:center;font-size:11px;color:var(--muted)}.edit-row input[type="range"]{display:block;width:100%;min-width:0;accent-color:var(--accent);cursor:pointer}.edit-row output{text-align:right;font-variant-numeric:tabular-nums}.reset-edit{justify-self:end;font-size:11px!important;padding:5px 8px!important}.mini.can-drag{cursor:grab;touch-action:none}.mini.dragging{cursor:grabbing}.holiday-status{font-size:12px;padding:9px 20px;max-width:1450px;margin:0 auto}.holiday-status.error{color:#ff9999}.holiday-status.ok{color:#9be0bc}
+</style>
+</head>
+<body>
+<header><h1>返礼品カレンダー自動生成</h1><p>プレビューは12ヶ月一覧。書き出しは月ごとに独立したPNG画像12枚（ZIP）。各月の左側に縦長画像を配置できます。</p></header>
+<div class="controls">
+<label class="field">年<input id="year" type="number" min="1955" max="2099" value="2027"></label>
+<label class="field">背景色<input id="bg" type="color" value="#fffaf2"></label>
+<label class="field">文字色<input id="fg" type="color" value="#2d3542"></label>
+<label class="field">日曜・祝日<input id="red" type="color" value="#cd5260"></label>
+<label class="field">土曜<input id="blue" type="color" value="#477eb5"></label>
+<label class="field">画像領域<input id="ratio" type="range" min="25" max="52" value="40"><span id="ratioText">40%</span></label>
+<button id="download" disabled>12枚をZIP保存</button><button id="retry" class="secondary">祝日を再取得</button><button id="all-clear" class="secondary">画像をすべて削除</button>
+</div>
+<p class="tip">左ペインで各月の画像を選択。画像はブラウザ内で処理され、サーバーには送信されません。縦長の領域に合わせてトリミングします。各月の拡大率・左右・上下位置を変更できます。プレビュー上の画像をドラッグして位置調整もできます。</p>
+<div id="holiday-status" class="holiday-status" role="status" aria-live="polite">祝日データを取得しています…</div>
+<div class="workspace"><aside class="sidebar"><div class="side-title">月別画像の設定</div><div id="image-controls"></div></aside><main id="grid" class="year"></main></div>
+<div class="notice">祝日データ：<a href="https://github.com/mati0516/japan-holidays" target="_blank" rel="noopener" style="color:inherit">japan-holidays</a>（内閣府公開CSVをもとに毎月更新）。取得にはインターネット接続が必要です。取得できない場合は画像出力を停止します。</div>
+<script>
+(()=>{'use strict';
+const W=1600,H=1000, names=['日','月','火','水','木','金','土'];
+const $=id=>document.getElementById(id), imgs=Array(12).fill(null), imageAdjust=Array.from({length:12},()=>({zoom:100,x:0,y:0})), editControls=Array(12).fill(null);
+const dateKey=(m,d)=>`${m+1}-${d}`;
+let holidayMap=new Map(), holidayState='loading', holidayYear=null, requestId=0;
+const holidayStatus=$('holiday-status');
+async function loadHolidays(){
+ const y=Number($('year').value), id=++requestId;
+ holidayState='loading'; holidayYear=null; holidayMap=new Map();
+ holidayStatus.className='holiday-status'; holidayStatus.textContent=`${y}年の祝日データを取得中…`;
+ $('download').disabled=true; updatePreviews();
+ try {
+  if(!Number.isInteger(y)||y<1955||y>2099)throw new Error('対応年は1955〜2099年です');
+  const response=await fetch(`https://mati0516.github.io/japan-holidays/year/${y}.json`,{cache:'no-store'});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const json=await response.json();
+  if(!json||Array.isArray(json)||typeof json!=='object')throw new Error('祝日データ形式が不正です');
+  const entries=Object.entries(json);
+  if(!entries.length)throw new Error('祝日データが空です');
+  const map=new Map();
+  for(const [key,name] of entries){if(!/^\d{4}-\d{2}-\d{2}$/.test(key)||typeof name!=='string')throw new Error('祝日データ形式が不正です');map.set(key,name)}
+  if(id!==requestId)return;
+  holidayMap=map;holidayState='ok';holidayYear=y;
+  holidayStatus.className='holiday-status ok';holidayStatus.textContent=`${y}年の祝日データ取得済み（${entries.length}日）`;
+  $('download').disabled=false;
+ }catch(e){
+  if(id!==requestId)return;
+  holidayState='error';holidayStatus.className='holiday-status error';
+  holidayStatus.textContent=`祝日を取得できません：${e.message}。インターネット接続を確認して「祝日を再取得」を押してください。`;
+ }finally{if(id===requestId)updatePreviews()}
+}
+function drawMonth(month,canvas,scaled=false){let ctx=canvas.getContext('2d');if(!ctx)return;const y=Number($('year').value)||2027;const holidaysMap=holidayMap;canvas.width=W;canvas.height=H;const bg=$('bg').value,fg=$('fg').value,red=$('red').value,blue=$('blue').value,split= Math.round(W*Number($('ratio').value)/100);
+ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+if(imgs[month]){let img=imgs[month],adj=imageAdjust[month];let sc=Math.max(split/img.width,H/img.height)*adj.zoom/100,w=img.width*sc,h=img.height*sc;let left=(split-w)*(adj.x+100)/200,top=(H-h)*(adj.y+100)/200;ctx.save();ctx.beginPath();ctx.rect(0,0,split,H);ctx.clip();ctx.drawImage(img,left,top,w,h);ctx.restore()}else{ctx.fillStyle='#e6e5e2';ctx.fillRect(0,0,split,H);ctx.fillStyle='#a1a7ac';ctx.textAlign='center';ctx.font='26px sans-serif';ctx.fillText('IMAGE',split/2,H/2)}
+ctx.fillStyle=fg;ctx.fillRect(split,0,2,H);const x0=split+45,x1=W-48, cw=(x1-x0)/7;
+ctx.textAlign='left';ctx.font='600 39px sans-serif';ctx.fillText(String(y),x0,99);ctx.font='bold 87px sans-serif';ctx.fillText(String(month+1).padStart(2,'0'),x0,194);ctx.font='32px sans-serif';ctx.fillText('MONTH',x0+125,184);
+const top=260;names.forEach((name,i)=>{ctx.textAlign='center';ctx.font='bold 29px sans-serif';ctx.fillStyle=i===0?red:i===6?blue:fg;ctx.fillText(name,x0+cw*(i+.5),top)});
+ctx.strokeStyle='#d4d0c9';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x0,top+21);ctx.lineTo(x1,top+21);ctx.stroke();
+let first=new Date(y,month,1).getDay(),days=new Date(y,month+1,0).getDate();let rows=Math.ceil((first+days)/7),start=top+96,step=Math.min(108,590/rows);
+for(let d=1;d<=days;d++){let idx=first+d-1,col=idx%7,row=Math.floor(idx/7),x=x0+col*cw+cw/2,dy=start+row*step,holiday=holidaysMap.get(`${y}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);ctx.textAlign='center';ctx.fillStyle=holiday||col===0?red:col===6?blue:fg;ctx.font='600 37px sans-serif';ctx.fillText(String(d),x,dy);if(holiday){ctx.font='15px sans-serif';let label=holiday;while(ctx.measureText(label).width>cw-5&&label.length>2)label=label.slice(0,-1);ctx.fillText(label,x,dy+25)}}
+ctx.strokeStyle='#d4d0c9';ctx.beginPath();ctx.moveTo(x0,906);ctx.lineTo(x1,906);ctx.stroke();ctx.textAlign='right';ctx.fillStyle=fg;ctx.font='20px sans-serif';ctx.fillText(`${y}.${String(month+1).padStart(2,'0')}`,x1,950)}
+function makeCanvas(m){let c=document.createElement('canvas');drawMonth(m,c);return c}
+const canvases=[];
+function updatePreviews(){for(let m=0;m<12;m++)if(canvases[m])drawMonth(m,canvases[m])}
+function render(){
+ const grid=$('grid'),controls=$('image-controls');grid.textContent='';controls.textContent='';canvases.length=0;
+ for(let m=0;m<12;m++){
+  const line=document.createElement('div');line.className='month-upload';
+  const monthLabel=document.createElement('span');monthLabel.className='m-label';monthLabel.textContent=`${m+1}月`;
+  const inputLabel=document.createElement('label');inputLabel.textContent='画像を選択';
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inputLabel.appendChild(inp);
+  const clear=document.createElement('button');clear.className='secondary';clear.textContent='削除';
+  const picked=document.createElement('span');picked.className='picked';picked.textContent=imgs[m]?'設定済':'未設定';
+  line.append(monthLabel,inputLabel,clear,picked);
+  const editor=document.createElement('div');editor.className='image-editor';
+  const inputs={};
+  for(const [key,label,min,max,unit] of [['zoom','拡大率',100,350,'%'],['x','左右',-100,100,''],['y','上下',-100,100,'']]){
+   const row=document.createElement('label');row.className='edit-row';
+   const name=document.createElement('span');name.textContent=label;
+   const slider=document.createElement('input');slider.type='range';slider.min=min;slider.max=max;slider.step=key==='zoom'?5:1;slider.value=imageAdjust[m][key];slider.disabled=!imgs[m];
+   const val=document.createElement('output');val.textContent=`${slider.value}${unit}`;
+   slider.addEventListener('input',()=>{imageAdjust[m][key]=Number(slider.value);val.textContent=`${slider.value}${unit}`;drawMonth(m,canvas)});
+   row.append(name,slider,val);editor.append(row);inputs[key]={slider,val,unit};
+  }
+  const reset=document.createElement('button');reset.className='secondary reset-edit';reset.textContent='位置・ズームをリセット';reset.disabled=!imgs[m];
+  const sync=()=>{for(const [key,obj] of Object.entries(inputs)){obj.slider.value=imageAdjust[m][key];obj.slider.disabled=!imgs[m];obj.val.textContent=`${imageAdjust[m][key]}${obj.unit}`}reset.disabled=!imgs[m];canvas.classList.toggle('can-drag',!!imgs[m])};
+  reset.onclick=()=>{imageAdjust[m]={zoom:100,x:0,y:0};sync();drawMonth(m,canvas)};
+  editor.append(reset);line.append(editor);controls.appendChild(line);editControls[m]=sync;
+  const box=document.createElement('section');box.className='month';
+  const head=document.createElement('div');head.className='month-head';head.textContent=`${m+1}月`;
+  const canvas=document.createElement('canvas');canvas.className='mini';canvases[m]=canvas;
+  box.append(head,canvas);grid.appendChild(box);
+  inp.addEventListener('change',()=>{
+   const file=inp.files?.[0];if(!file)return;
+   const url=URL.createObjectURL(file),image=new Image();
+   image.onload=()=>{imgs[m]=image;imageAdjust[m]={zoom:100,x:0,y:0};picked.textContent='設定済';sync();drawMonth(m,canvas);URL.revokeObjectURL(url)};
+   image.onerror=()=>{alert('画像を読み込めませんでした');URL.revokeObjectURL(url)};
+   image.src=url;
+  });
+  clear.onclick=()=>{imgs[m]=null;imageAdjust[m]={zoom:100,x:0,y:0};inp.value='';picked.textContent='未設定';sync();drawMonth(m,canvas)};
+  let drag=null;
+  canvas.addEventListener('pointerdown',e=>{
+   if(!imgs[m])return;
+   const bounds=canvas.getBoundingClientRect(),px=(e.clientX-bounds.left)*W/bounds.width,split=W*Number($('ratio').value)/100;
+   if(px<0||px>split)return;
+   e.preventDefault();canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');
+   drag={x:e.clientX,y:e.clientY,ox:imageAdjust[m].x,oy:imageAdjust[m].y};
+  });
+  canvas.addEventListener('pointermove',e=>{
+   if(!drag||!imgs[m])return;
+   const rect=canvas.getBoundingClientRect(),im=imgs[m],split=Math.round(W*Number($('ratio').value)/100),sc=Math.max(split/im.width,H/im.height)*imageAdjust[m].zoom/100;
+   const extraX=im.width*sc-split,extraY=im.height*sc-H;
+   const dx=(e.clientX-drag.x)*W/rect.width,dy=(e.clientY-drag.y)*H/rect.height;
+   if(extraX>0.001)imageAdjust[m].x=Math.max(-100,Math.min(100,drag.ox-dx*200/extraX));
+   if(extraY>0.001)imageAdjust[m].y=Math.max(-100,Math.min(100,drag.oy-dy*200/extraY));
+   imageAdjust[m].x=Math.round(imageAdjust[m].x);imageAdjust[m].y=Math.round(imageAdjust[m].y);sync();drawMonth(m,canvas);
+  });
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>{drag=null;canvas.classList.remove('dragging')});
+  sync();
+  drawMonth(m,canvas);
+ }
+}
+// 外部ライブラリを使わない ZIP (store方式) の生成
+const encoder=new TextEncoder();let crcTable;function crc32(bytes){if(!crcTable){crcTable=Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0})}let crc=0xffffffff;for(const b of bytes)crc=crcTable[(crc^b)&255]^(crc>>>8);return (crc^0xffffffff)>>>0}
+function zipFiles(files){let chunks=[],central=[],offset=0;const u16=(dv,o,v)=>dv.setUint16(o,v,true),u32=(dv,o,v)=>dv.setUint32(o,v,true);for(const f of files){let name=encoder.encode(f.name),data=f.data,crc=crc32(data),head=new Uint8Array(30+name.length),view=new DataView(head.buffer);u32(view,0,0x04034b50);u16(view,4,20);u16(view,6,0x800);u16(view,8,0);u32(view,14,crc);u32(view,18,data.length);u32(view,22,data.length);u16(view,26,name.length);head.set(name,30);chunks.push(head,data);let cen=new Uint8Array(46+name.length),cv=new DataView(cen.buffer);u32(cv,0,0x02014b50);u16(cv,4,20);u16(cv,6,20);u16(cv,8,0x800);u32(cv,16,crc);u32(cv,20,data.length);u32(cv,24,data.length);u16(cv,28,name.length);u32(cv,42,offset);cen.set(name,46);central.push(cen);offset+=head.length+data.length}let cdsize=central.reduce((a,b)=>a+b.length,0),end=new Uint8Array(22),dv=new DataView(end.buffer);u32(dv,0,0x06054b50);u16(dv,8,files.length);u16(dv,10,files.length);u32(dv,12,cdsize);u32(dv,16,offset);return new Blob([...chunks,...central,end],{type:'application/zip'})}
+const toBytes=c=>new Promise((resolve,reject)=>c.toBlob(async b=>b?resolve(new Uint8Array(await b.arrayBuffer())):reject(new Error('PNG生成に失敗')),'image/png'));
+$('download').onclick=async()=>{if(holidayState!=='ok'||holidayYear!==Number($('year').value)){alert('祝日データ取得後に出力できます');return}let button=$('download');button.disabled=true;button.textContent='PNG生成中…';try{let y=Number($('year').value),files=[];for(let m=0;m<12;m++){let c=makeCanvas(m);files.push({name:`calendar_${y}_${String(m+1).padStart(2,'0')}.png`,data:await toBytes(c)})}let blob=zipFiles(files),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`calendar_${y}_12months.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000)}catch(e){alert('保存に失敗しました: '+e.message)}finally{button.disabled=false;button.textContent='12枚をZIP保存'}};
+$('all-clear').onclick=()=>{imgs.fill(null);imageAdjust.forEach(a=>Object.assign(a,{zoom:100,x:0,y:0}));render()};for(const id of ['bg','fg','red','blue','ratio'])$(id).addEventListener('input',()=>{if(id==='ratio')$('ratioText').textContent=$('ratio').value+'%';updatePreviews()});$('year').addEventListener('change',loadHolidays);$('year').addEventListener('input',()=>{holidayState='loading';holidayYear=null;$('download').disabled=true;holidayStatus.textContent='年の変更後に祝日を再取得します';updatePreviews()});$('retry').addEventListener('click',loadHolidays);render();loadHolidays();
+})();
+</script>
+</body></html>
