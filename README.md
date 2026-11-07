@@ -1,14 +1,6 @@
-# 返礼品・年間カレンダージェネレーター
+# 年間カレンダージェネレーター
 
 GitHub Pages 用の静的サイトです。ビルド不要です。
-
-## 公開手順
-
-1. GitHubで新しいリポジトリを作成します（例: `calendar-generator`）。
-2. `index.html` と `.nojekyll` をリポジトリの**ルート**にアップロードします。
-3. リポジトリの **Settings → Pages → Build and deployment** で **Deploy from a branch** を選択します。
-4. **Branch: `main` / Folder: `/(root)`** を選び、**Save** します。
-5. デプロイ後、`https://<GitHubユーザー名>.github.io/calendar-generator/` にアクセスします。
 
 ## 機能
 
